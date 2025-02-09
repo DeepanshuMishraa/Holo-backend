@@ -24,7 +24,9 @@ characterRouter.post("/create", getUser, zValidator("json", createCharecterSchem
         name: data.name,
         description: data.description,
         avatar: data.avatar,
-        userId: user.id
+        userId: user.id,
+        story: data.story,
+        personality: data.personality
       }
     });
 
@@ -150,7 +152,9 @@ characterRouter.put("/:id", getUser, zValidator("json", updateCharacterSchema), 
       data: {
         name: data.name,
         description: data.description,
-        avatar: data.avatar
+        avatar: data.avatar,
+        story: data.story,
+        personality: data.personality
       }
     })
 

@@ -30,6 +30,8 @@ model character {
   id           String         @id @default(uuid())
   name         String
   description  String?
+  story        String
+  personality  String
   avatar       String?
   userId       String
   user         User           @relation(fields: [userId], references: [kindeId])
