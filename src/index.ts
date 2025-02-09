@@ -1,7 +1,8 @@
 import { Hono } from "hono";
 import { authRouter } from "./routes/user";
+import { characterRouter } from "./routes/character";
 
-const app = new Hono().basePath("/api").route("/auth", authRouter);
+const app = new Hono().basePath("/api").route("/auth", authRouter).route("/character",characterRouter);
 
 app.get("/health", (c) => {
   return c.json({
