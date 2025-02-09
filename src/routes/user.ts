@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { getUser, kindeClient, sessionManager } from "../lib/auth";
+import { db } from "../lib/db";
 
 
 
@@ -24,12 +25,42 @@ authRouter.get("/callback", async (c) => {
   try {
     const url = new URL(c.req.url);
     await kindeClient.handleRedirectToApp(sessionManager(c), url);
-    return c.redirect("/");
+
+    const isAuthenticated = await kindeClient.isAuthenticated(sessionManager(c));
+    if (!isAuthenticated) {
+      console.log("User not authenticated");
+      return c.redirect("/api/auth/login");
+    }
+
+    const user = await kindeClient.getUserProfile(sessionManager(c));
+
+    if (!user || !user.id) {
+      console.error("Failed to get user profile");
+      return c.redirect(process.env.KINDE_POST_LOGIN_REDIRECT_URL!);
+    }
+
+    const dbUser = await db.user.upsert({
+      where: { kindeId: user.id },
+      create: {
+        kindeId: user.id,
+        email: user.email || '',
+        firstName: user.given_name || null,
+        lastName: user.family_name || null,
+        picture: user.picture || null,
+      },
+      update: {
+        email: user.email || '',
+        firstName: user.given_name || null,
+        lastName: user.family_name || null,
+        picture: user.picture || null,
+      }
+    });
+
+    return c.redirect(process.env.KINDE_POST_LOGIN_REDIRECT_URL!);
   } catch (error) {
-    console.error('Authentication error:', error);
-    return c.redirect('/api/auth/login');
+    return c.json({ error: "Failed to process authentication callback" }, 500);
   }
-})
+});
 
 
 authRouter.get("/logout", async (c) => {
