@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "bun run --watch src/index.ts",
+    "postinstall": "bunx prisma generate",
     "start": "bun run src/index.ts",
     "build": "bunx esbuild --bundle src/index.ts --format=esm --outfile=dist/_worker.js"
   },
