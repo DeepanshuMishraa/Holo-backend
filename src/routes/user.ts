@@ -2,11 +2,7 @@ import { Hono } from "hono";
 import { getUser, kindeClient, sessionManager } from "../lib/auth";
 import { db } from "../lib/db";
 
-
-
 export const authRouter = new Hono();
-
-
 
 authRouter.get("/login", async (c) => {
   const loginUrl = await kindeClient.login(sessionManager(c));
