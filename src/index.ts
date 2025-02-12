@@ -2,15 +2,22 @@ import { Hono } from "hono";
 import { authRouter } from "./routes/user";
 import { characterRouter } from "./routes/character";
 import { handle } from "hono/vercel";
+import { cors } from "hono/cors";
 
 export const runtime = 'edge'
 
 const app = new Hono().basePath("/api").route("/auth", authRouter).route("/character", characterRouter);
 
-// Keep track of the last ping time
+app.use("*", cors({
+  origin: "*",
+  allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
+  allowHeaders: ["Content-Type", "Authorization"],
+  exposeHeaders: ["Content-Type", "Authorization"],
+  credentials: true
+}))
+
 let lastPingTime = Date.now();
 
-// Function to ping the server
 async function keepAlive() {
   try {
     const response = await fetch(process.env.RENDER_EXTERNAL_URL + '/api/ping');

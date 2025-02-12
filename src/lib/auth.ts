@@ -64,7 +64,7 @@ export const getUser = createMiddleware<Env>(async (c, next) => {
 
     const isAuthenticated = await kindeClient.isAuthenticated(manager);
     if (!isAuthenticated) {
-      return c.redirect("/login");
+      return c.redirect("/auth/login");
     }
 
     const user = await kindeClient.getUser(manager);
