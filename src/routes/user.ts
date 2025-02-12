@@ -7,7 +7,7 @@ export const authRouter = new Hono();
 authRouter.get("/login", async (c) => {
   const loginUrl = await kindeClient.login(sessionManager(c));
   console.log('Login URL:', loginUrl.toString());
-  return c.redirect(process.env.KINDE_POST_LOGIN_REDIRECT_URL!);
+  return c.redirect(loginUrl.toString());
 })
 
 

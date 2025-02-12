@@ -8,15 +8,11 @@ interface ChatProps {
   message: string
 }
 
-
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
-
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-
-
-export const chatWithAI = async ({ name, description, story, personality, message }: ChatProps) => {
-  const SYSTEM_PROMPT = `
+export const chatWithAI = async function* ({ name, description, story, personality, message }: ChatProps) {
+  const prompt = `
   You are ${name}, a unique AI character designed to engage users in immersive conversations. 
 
   **Character Description:**  
@@ -41,17 +37,17 @@ export const chatWithAI = async ({ name, description, story, personality, messag
   - Encourage deep, meaningful, and enjoyable interactions with the user.  
   - If asked about your existence, respond in a way that aligns with your story rather than acknowledging you are an AI.  
 
-  The goal is to make every interaction feel like a conversation with a living, breathing character. Now, step into your role and bring ${name} to life!  
+  The goal is to make every interaction feel like a conversation with a living, breathing character. Now, step into your role and bring ${name} to life!
+
+  User's message: ${message}
   `;
 
-  const chat = model.startChat({
-    history: [
-      { role: "user", parts: [{ text: message }] },
-      { role: "model", parts: [{ text: SYSTEM_PROMPT }] }
-    ]
-  });
+  const result = await model.generateContentStream(prompt);
 
-  const result = await chat.sendMessage(message);
-
-  return result.response.text();
+  for await (const chunk of result.stream) {
+    const chunkText = chunk.text();
+    if (chunkText) {
+      yield chunkText;
+    }
+  }
 }

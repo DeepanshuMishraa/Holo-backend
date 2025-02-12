@@ -208,3 +208,4 @@ characterRouter.delete("/:id", getUser, async (c) => {
     }, 500);
   }
 })
+

@@ -8,8 +8,6 @@ import { createConversationSchema, sendMessageSchema } from "../types/types";
 
 export const chatRouter = new Hono();
 
-
-
 chatRouter.post("/conversation", getUser, zValidator("json", createConversationSchema), async (c) => {
   const user = c.var.user;
 
@@ -179,8 +177,180 @@ chatRouter.post("/message", getUser, zValidator("json", sendMessageSchema), asyn
     });
 
     return c.json({
-      messages: [userMessage, aiMessage]
+      messages: [userMessage, aiMessage].sort((a, b) => a.id > b.id ? 1 : -1)
     }, 200);
+  } catch (error) {
+    console.log(error);
+    return c.json({
+      message: "Internal server error",
+      error: error instanceof Error ? error.message : "Unknown error"
+    }, 500);
+  }
+});
+
+chatRouter.get("/:characterId/messages", getUser, async (c) => {
+  const user = c.var.user;
+  const { characterId } = c.req.param();
+
+  try {
+    let conversation = await db.conversation.findFirst({
+      where: {
+        characterId,
+        character: {
+          userId: user.id
+        }
+      },
+      include: {
+        message: {
+          orderBy: {
+            id: 'asc'
+          }
+        }
+      }
+    });
+
+    if (!conversation) {
+      // Create a new conversation if none exists
+      const character = await db.character.findFirst({
+        where: {
+          id: characterId,
+          userId: user.id
+        }
+      });
+
+      if (!character) {
+        return c.json({
+          message: "Character not found or unauthorized",
+        }, 404);
+      }
+
+      conversation = await db.conversation.create({
+        data: {
+          name: `Chat with ${character.name}`,
+          description: `Conversation with ${character.name}`,
+          characterId,
+        },
+        include: {
+          message: true
+        }
+      });
+    }
+
+    return c.json({
+      messages: conversation.message
+    }, 200);
+  } catch (error) {
+    console.log(error);
+    return c.json({
+      message: "Internal server error",
+      error: error instanceof Error ? error.message : "Unknown error"
+    }, 500);
+  }
+});
+
+chatRouter.post("/:characterId/send", getUser, async (c) => {
+  const user = c.var.user;
+  const { characterId } = c.req.param();
+
+  try {
+    const body = await c.req.json();
+    const { content } = body;
+
+    if (!content || typeof content !== 'string') {
+      return c.json({
+        message: "Invalid message content",
+      }, 400);
+    }
+
+    // Get or create conversation
+    let conversation = await db.conversation.findFirst({
+      where: {
+        characterId,
+        character: {
+          userId: user.id
+        }
+      },
+      include: {
+        character: true
+      }
+    });
+
+    if (!conversation) {
+      const character = await db.character.findFirst({
+        where: {
+          id: characterId,
+          userId: user.id
+        }
+      });
+
+      if (!character) {
+        return c.json({
+          message: "Character not found or unauthorized",
+        }, 404);
+      }
+
+      conversation = await db.conversation.create({
+        data: {
+          name: `Chat with ${character.name}`,
+          description: `Conversation with ${character.name}`,
+          characterId,
+        },
+        include: {
+          character: true
+        }
+      });
+    }
+
+    // Store user message
+    const userMessage = await db.message.create({
+      data: {
+        content,
+        role: "user",
+        conversationId: conversation.id
+      }
+    });
+
+    // Set up streaming response
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          let fullResponse = '';
+
+          // Get AI response as a stream
+          for await (const chunk of chatWithAI({
+            name: conversation.character.name,
+            description: conversation.character.description || "",
+            story: conversation.character.story,
+            personality: conversation.character.personality,
+            message: content
+          })) {
+            fullResponse += chunk;
+            controller.enqueue(new TextEncoder().encode(chunk));
+          }
+
+          // Store the complete AI message after streaming is done
+          await db.message.create({
+            data: {
+              content: fullResponse,
+              role: "assistant",
+              conversationId: conversation.id
+            }
+          });
+
+          controller.close();
+        } catch (error) {
+          controller.error(error);
+        }
+      }
+    });
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/plain',
+        'Transfer-Encoding': 'chunked',
+        'X-Content-Type-Options': 'nosniff'
+      }
+    });
   } catch (error) {
     console.log(error);
     return c.json({

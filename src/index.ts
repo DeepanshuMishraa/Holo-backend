@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { authRouter } from "./routes/user";
 import { characterRouter } from "./routes/character";
+import { chatRouter } from "./routes/chat";
 import { cors } from "hono/cors";
 
 export const runtime = 'edge'
@@ -19,7 +20,8 @@ app.use("*", cors({
 
 // Apply routes after CORS
 app.route("/api/auth", authRouter)
-  .route("/api/character", characterRouter);
+  .route("/api/character", characterRouter)
+  .route("/api/chat", chatRouter);
 
 let lastPingTime = Date.now();
 
