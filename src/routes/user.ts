@@ -5,7 +5,11 @@ import { db } from "../lib/db";
 export const authRouter = new Hono();
 
 authRouter.get("/login", async (c) => {
-  const loginUrl = await kindeClient.login(sessionManager(c));
+  const manager = sessionManager(c);
+  // Clear any existing session before starting new login
+  await manager.destroySession();
+
+  const loginUrl = await kindeClient.login(manager);
   console.log('Login URL:', loginUrl.toString());
   return c.redirect(loginUrl.toString());
 })

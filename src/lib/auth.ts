@@ -25,39 +25,50 @@ let store: Record<string, unknown> = {};
 
 export const sessionManager = (c: Context): SessionManager => ({
   async getSessionItem(key: string) {
+    console.log('Getting session item:', key);
     const result = getCookie(c, key);
+    console.log('Session item value:', result);
     return result;
   },
   async setSessionItem(key: string, value: unknown) {
+    console.log('Setting session item:', key);
     const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: "lax" as const,
-      path: "/"
+      sameSite: process.env.NODE_ENV === 'production' ? "none" as const : "lax" as const,
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7 // 7 days
     };
+
     if (typeof value === "string") {
+      console.log('Setting cookie:', key, value);
       setCookie(c, key, value, cookieOptions);
     } else {
+      console.log('Setting stringified cookie:', key, JSON.stringify(value));
       setCookie(c, key, JSON.stringify(value), cookieOptions);
     }
   },
   async removeSessionItem(key: string) {
+    console.log('Removing session item:', key);
     const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: "lax" as const,
+      sameSite: process.env.NODE_ENV === 'production' ? "none" as const : "lax" as const,
       path: "/"
     };
     deleteCookie(c, key, cookieOptions);
   },
   async destroySession() {
+    console.log('Destroying session');
     const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: "lax" as const,
+      sameSite: process.env.NODE_ENV === 'production' ? "none" as const : "lax" as const,
       path: "/"
     };
-    ["id_token", "access_token", "user", "refresh_token"].forEach((key) => {
+    const sessionKeys = ["id_token", "access_token", "user", "refresh_token", "oauth_state"];
+    sessionKeys.forEach((key) => {
+      console.log('Deleting cookie:', key);
       deleteCookie(c, key, cookieOptions);
     });
   },
