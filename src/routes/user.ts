@@ -16,7 +16,12 @@ authRouter.get("/login", async (c) => {
 
 
 authRouter.get("/register", async (c) => {
-  const registerUrl = await kindeClient.register(sessionManager(c));
+  const manager = sessionManager(c);
+  // Clear any existing session before starting registration
+  await manager.destroySession();
+
+  const registerUrl = await kindeClient.register(manager);
+  console.log('Register URL:', registerUrl.toString());
   return c.redirect(registerUrl.toString());
 })
 

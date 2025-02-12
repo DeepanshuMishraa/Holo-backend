@@ -26,12 +26,23 @@ let store: Record<string, unknown> = {};
 export const sessionManager = (c: Context): SessionManager => ({
   async getSessionItem(key: string) {
     console.log('Getting session item:', key);
+    if (key === 'oauth_state') {
+      const state = store[key];
+      console.log('Getting oauth_state from store:', state);
+      return state as string;
+    }
     const result = getCookie(c, key);
     console.log('Session item value:', result);
     return result;
   },
   async setSessionItem(key: string, value: unknown) {
-    console.log('Setting session item:', key);
+    console.log('Setting session item:', key, value);
+    if (key === 'oauth_state') {
+      console.log('Setting oauth_state in store:', value);
+      store[key] = value;
+      return;
+    }
+
     const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -50,6 +61,12 @@ export const sessionManager = (c: Context): SessionManager => ({
   },
   async removeSessionItem(key: string) {
     console.log('Removing session item:', key);
+    if (key === 'oauth_state') {
+      console.log('Removing oauth_state from store');
+      delete store[key];
+      return;
+    }
+
     const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -60,13 +77,15 @@ export const sessionManager = (c: Context): SessionManager => ({
   },
   async destroySession() {
     console.log('Destroying session');
+    store = {};
+
     const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? "none" as const : "lax" as const,
       path: "/"
     };
-    const sessionKeys = ["id_token", "access_token", "user", "refresh_token", "oauth_state"];
+    const sessionKeys = ["id_token", "access_token", "user", "refresh_token"];
     sessionKeys.forEach((key) => {
       console.log('Deleting cookie:', key);
       deleteCookie(c, key, cookieOptions);
