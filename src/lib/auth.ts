@@ -31,8 +31,8 @@ export const sessionManager = (c: Context): SessionManager => ({
   async setSessionItem(key: string, value: unknown) {
     const cookieOptions = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: "lax" as const,
+      secure: true,
+      sameSite: "none" as const,
       path: "/",
       domain: process.env.COOKIE_DOMAIN || undefined
     };
@@ -43,11 +43,25 @@ export const sessionManager = (c: Context): SessionManager => ({
     }
   },
   async removeSessionItem(key: string) {
-    deleteCookie(c, key);
+    const cookieOptions = {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none" as const,
+      path: "/",
+      domain: process.env.COOKIE_DOMAIN || undefined
+    };
+    deleteCookie(c, key, cookieOptions);
   },
   async destroySession() {
+    const cookieOptions = {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none" as const,
+      path: "/",
+      domain: process.env.COOKIE_DOMAIN || undefined
+    };
     ["id_token", "access_token", "user", "refresh_token"].forEach((key) => {
-      deleteCookie(c, key);
+      deleteCookie(c, key, cookieOptions);
     });
   },
 });

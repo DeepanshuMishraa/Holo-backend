@@ -10,12 +10,17 @@ const app = new Hono();
 
 // Apply CORS before any routes
 app.use("*", cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:3001", // Restrict to frontend URL
+  origin: (origin) => {
+    const allowedOrigins = [
+      process.env.FRONTEND_URL || "http://localhost:3001",
+    ];
+    return allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
+  },
   allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowHeaders: ["Content-Type", "Authorization", "Cookie"],
+  allowHeaders: ["Content-Type", "Authorization", "Cookie", "Set-Cookie"],
   exposeHeaders: ["Set-Cookie"],
   credentials: true,
-  maxAge: 86400, // 24 hours
+  maxAge: 86400
 }));
 
 // Apply routes after CORS
