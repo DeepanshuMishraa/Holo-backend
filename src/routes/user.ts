@@ -7,7 +7,7 @@ export const authRouter = new Hono();
 authRouter.get("/login", async (c) => {
   const loginUrl = await kindeClient.login(sessionManager(c));
   console.log('Login URL:', loginUrl.toString());
-  return c.redirect(loginUrl.toString());
+  return c.redirect(process.env.KINDE_POST_LOGIN_REDIRECT_URL!);
 })
 
 
@@ -65,8 +65,49 @@ authRouter.get("/logout", async (c) => {
 });
 
 
-authRouter.get("/me", getUser, async (c) => {
-  const user = c.var.user;
-  return c.json({ user });
-})
+authRouter.get("/me", async (c) => {
+  try {
+    console.log('GET /me - Checking session...');
+    const manager = sessionManager(c);
+
+    const isAuthenticated = await kindeClient.isAuthenticated(manager);
+    console.log('Is authenticated:', isAuthenticated);
+
+    if (!isAuthenticated) {
+      console.log('User not authenticated');
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const user = await kindeClient.getUser(manager);
+    console.log('User data:', user);
+
+    if (!user || !user.id) {
+      console.log('No user data found');
+      return c.json({ error: "No user data found" }, 401);
+    }
+
+    // Get user from database
+    const dbUser = await db.user.findUnique({
+      where: { kindeId: user.id }
+    });
+
+    if (!dbUser) {
+      console.log('User not found in database');
+      return c.json({ error: "User not found" }, 404);
+    }
+
+    return c.json({
+      user: {
+        id: dbUser.kindeId,
+        email: dbUser.email,
+        given_name: dbUser.firstName,
+        family_name: dbUser.lastName,
+        picture: dbUser.picture
+      }
+    });
+  } catch (error) {
+    console.error('Error in /me endpoint:', error);
+    return c.json({ error: "Failed to get user data" }, 500);
+  }
+});
 

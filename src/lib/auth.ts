@@ -31,10 +31,11 @@ export const sessionManager = (c: Context): SessionManager => ({
   async setSessionItem(key: string, value: unknown) {
     const cookieOptions = {
       httpOnly: true,
-      secure: true,
-      sameSite: "Lax",
-      path: "/"
-    } as const;
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: "lax" as const,
+      path: "/",
+      domain: process.env.COOKIE_DOMAIN || undefined
+    };
     if (typeof value === "string") {
       setCookie(c, key, value, cookieOptions);
     } else {
@@ -61,18 +62,28 @@ type Env = {
 export const getUser = createMiddleware<Env>(async (c, next) => {
   try {
     const manager = sessionManager(c);
+    console.log('Checking authentication...');
 
     const isAuthenticated = await kindeClient.isAuthenticated(manager);
+    console.log('Is authenticated:', isAuthenticated);
+
     if (!isAuthenticated) {
-      return c.redirect("/auth/login");
+      console.log('User not authenticated');
+      return c.json({ error: "Unauthorized" }, 401);
     }
 
     const user = await kindeClient.getUser(manager);
-    c.set("user", user);
+    console.log('User found:', user);
 
+    if (!user || !user.id) {
+      console.log('No user data found');
+      return c.json({ error: "No user data found" }, 401);
+    }
+
+    c.set("user", user);
     await next();
   } catch (err) {
-    console.error(err);
-    return c.json({ error: "Failed to get user" }, 500);
+    console.error('Auth middleware error:', err);
+    return c.json({ error: "Authentication failed" }, 500);
   }
-})
+});
