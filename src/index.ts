@@ -13,12 +13,12 @@ app.use("*", cors({
   origin: (origin) => {
     const allowedOrigins = [
       process.env.FRONTEND_URL || "http://localhost:3001",
+     
     ];
     return allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
   },
   allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowHeaders: ["Content-Type", "Authorization", "Cookie", "Set-Cookie"],
-  exposeHeaders: ["Set-Cookie"],
+  allowHeaders: ["Content-Type", "Authorization", "Cookie"],
   credentials: true,
   maxAge: 86400
 }));
