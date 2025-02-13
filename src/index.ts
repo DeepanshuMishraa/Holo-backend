@@ -1,32 +1,41 @@
 import { Hono } from "hono";
-import { authRouter } from "./routes/user";
 import { characterRouter } from "./routes/character";
 import { chatRouter } from "./routes/chat";
 import { cors } from "hono/cors";
+import { auth } from "./lib/auth";
+import { logger } from "hono/logger";
+import { authMiddleware } from "./lib/middleware";
 
 export const runtime = 'edge'
 
 const app = new Hono();
 
-// Apply CORS before any routes
-app.use("*", cors({
-  origin: (origin) => {
-    const allowedOrigins = [
-      process.env.FRONTEND_URL || "http://localhost:3001",
-     
-    ];
-    return allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
-  },
-  allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowHeaders: ["Content-Type", "Authorization", "Cookie"],
-  credentials: true,
-  maxAge: 86400
-}));
+app.use("*", logger())
 
-// Apply routes after CORS
-app.route("/api/auth", authRouter)
-  .route("/api/character", characterRouter)
-  .route("/api/chat", chatRouter);
+// Apply CORS before any routes
+app.use(
+  "/api/auth/*",
+  cors({
+    origin: (origin) => {
+      const allowedOrigins = [
+        process.env.FRONTEND_URL || "http://localhost:3001",
+      ];
+      return allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
+    },
+    allowMethods: ["POST", "GET", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization", "Cookie"],
+    exposeHeaders: ["Content-Length"],
+    credentials: true,
+    maxAge: 600,
+  })
+);
+
+app.use("*", authMiddleware);
+
+// Mount the auth handler with the correct pattern
+app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
+
+app.route("/api/character", characterRouter).route("/api/chat", chatRouter);
 
 let lastPingTime = Date.now();
 

@@ -1,20 +1,15 @@
 import { Hono } from "hono";
-import { getUser } from "../lib/auth";
 import { createCharecterSchema, updateCharacterSchema } from "../types/types";
 import { zValidator } from '@hono/zod-validator'
 import { db } from "../lib/db";
+import type { AuthHonoEnv } from "../lib/middleware";
+import { requireAuth } from "../lib/middleware";
 
+export const characterRouter = new Hono<AuthHonoEnv>();
 
-export const characterRouter = new Hono();
-
-characterRouter.post("/create", getUser, zValidator("json", createCharecterSchema), async (c) => {
-  const user = c.var.user;
-
-  if (!user) {
-    return c.json({
-      message: "Unauthorized",
-    }, 401);
-  }
+characterRouter.post("/create", requireAuth, zValidator("json", createCharecterSchema), async (c) => {
+  const user = c.get("user");
+  if (!user) throw new Error("User not found");
 
   try {
     const data = c.req.valid("json");
@@ -41,10 +36,9 @@ characterRouter.post("/create", getUser, zValidator("json", createCharecterSchem
       error: error instanceof Error ? error.message : "Unknown error"
     }, 500);
   }
-})
+});
 
-
-characterRouter.get("/bulk", getUser, async (c) => {
+characterRouter.get("/bulk", requireAuth, async (c) => {
   try {
     const character = await db.character.findMany();
     if (character.length === 0) {
@@ -63,11 +57,11 @@ characterRouter.get("/bulk", getUser, async (c) => {
       error: error instanceof Error ? error.message : "Unknown error"
     }, 500);
   }
-})
+});
 
-
-characterRouter.get("/", getUser, async (c) => {
-  const user = c.var.user;
+characterRouter.get("/", requireAuth, async (c) => {
+  const user = c.get("user");
+  if (!user) throw new Error("User not found");
 
   try {
     const character = await db.character.findFirst({
@@ -92,18 +86,16 @@ characterRouter.get("/", getUser, async (c) => {
       error: error instanceof Error ? error.message : "Unknown error"
     }, 500);
   }
-})
+});
 
-
-
-characterRouter.get("/:id", getUser, async (c) => {
+characterRouter.get("/:id", requireAuth, async (c) => {
   try {
     const { id } = c.req.param();
     const character = await db.character.findUnique({
       where: {
         id: id
       }
-    })
+    });
 
     if (!character) {
       return c.json({
@@ -121,24 +113,24 @@ characterRouter.get("/:id", getUser, async (c) => {
       error: error instanceof Error ? error.message : "Unknown error"
     }, 500);
   }
-})
+});
 
-
-characterRouter.put("/:id", getUser, zValidator("json", updateCharacterSchema), async (c) => {
+characterRouter.put("/:id", requireAuth, zValidator("json", updateCharacterSchema), async (c) => {
   try {
     const { id } = c.req.param();
-    const user = c.var.user;
+    const user = c.get("user");
+    if (!user) throw new Error("User not found");
 
     const character = await db.character.findUnique({
       where: {
         id: id,
         userId: user.id
       }
-    })
+    });
 
     if (!character) {
       return c.json({
-        message: "Charecter not found",
+        message: "Character not found",
       }, 404);
     }
 
@@ -156,7 +148,7 @@ characterRouter.put("/:id", getUser, zValidator("json", updateCharacterSchema), 
         story: data.story,
         personality: data.personality
       }
-    })
+    });
 
     return c.json({
       message: "Character updated successfully",
@@ -169,20 +161,20 @@ characterRouter.put("/:id", getUser, zValidator("json", updateCharacterSchema), 
       error: error instanceof Error ? error.message : "Unknown error"
     }, 500);
   }
-})
+});
 
-
-characterRouter.delete("/:id", getUser, async (c) => {
+characterRouter.delete("/:id", requireAuth, async (c) => {
   try {
     const { id } = c.req.param();
-    const user = c.var.user;
+    const user = c.get("user");
+    if (!user) throw new Error("User not found");
 
     const character = await db.character.findUnique({
       where: {
         id: id,
         userId: user.id
       }
-    })
+    });
 
     if (!character) {
       return c.json({
@@ -195,7 +187,7 @@ characterRouter.delete("/:id", getUser, async (c) => {
         id: id,
         userId: user.id
       }
-    })
+    });
 
     return c.json({
       message: "Character deleted successfully",
@@ -207,5 +199,5 @@ characterRouter.delete("/:id", getUser, async (c) => {
       error: error instanceof Error ? error.message : "Unknown error"
     }, 500);
   }
-})
+});
 

@@ -1,21 +1,17 @@
 import { Hono } from "hono";
-import { getUser } from "../lib/auth";
 import { db } from "../lib/db";
 import { z } from "zod";
 import { zValidator } from '@hono/zod-validator'
 import { chatWithAI } from "../lib/ai";
 import { createConversationSchema, sendMessageSchema } from "../types/types";
+import type { AuthHonoEnv } from "../lib/middleware";
+import { requireAuth } from "../lib/middleware";
 
-export const chatRouter = new Hono();
+export const chatRouter = new Hono<AuthHonoEnv>();
 
-chatRouter.post("/conversation", getUser, zValidator("json", createConversationSchema), async (c) => {
-  const user = c.var.user;
-
-  if (!user) {
-    return c.json({
-      message: "Unauthorized",
-    }, 401);
-  }
+chatRouter.post("/conversation", requireAuth, zValidator("json", createConversationSchema), async (c) => {
+  const user = c.get("user");
+  if (!user) throw new Error("User not found");
 
   try {
     const data = c.req.valid("json");
@@ -54,8 +50,9 @@ chatRouter.post("/conversation", getUser, zValidator("json", createConversationS
   }
 });
 
-chatRouter.get("/conversations", getUser, async (c) => {
-  const user = c.var.user;
+chatRouter.get("/conversations", requireAuth, async (c) => {
+  const user = c.get("user");
+  if (!user) throw new Error("User not found");
 
   try {
     const conversations = await db.conversation.findMany({
@@ -87,8 +84,9 @@ chatRouter.get("/conversations", getUser, async (c) => {
   }
 });
 
-chatRouter.get("/conversation/:id", getUser, async (c) => {
-  const user = c.var.user;
+chatRouter.get("/conversation/:id", requireAuth, async (c) => {
+  const user = c.get("user");
+  if (!user) throw new Error("User not found");
   const { id } = c.req.param();
 
   try {
@@ -127,8 +125,9 @@ chatRouter.get("/conversation/:id", getUser, async (c) => {
   }
 });
 
-chatRouter.post("/message", getUser, zValidator("json", sendMessageSchema), async (c) => {
-  const user = c.var.user;
+chatRouter.post("/message", requireAuth, zValidator("json", sendMessageSchema), async (c) => {
+  const user = c.get("user");
+  if (!user) throw new Error("User not found");
 
   try {
     const data = c.req.valid("json");
@@ -161,16 +160,22 @@ chatRouter.post("/message", getUser, zValidator("json", sendMessageSchema), asyn
       }
     });
 
-    const aiResponse = await chatWithAI({
+    // Get AI response
+    let aiResponseText = "";
+    for await (const chunk of chatWithAI({
       name: conversation.character.name,
       description: conversation.character.description || "",
       story: conversation.character.story,
       personality: conversation.character.personality,
       message: data.content
-    });
+    })) {
+      aiResponseText += chunk;
+    }
+
+    // Store AI message
     const aiMessage = await db.message.create({
       data: {
-        content: aiResponse,
+        content: aiResponseText,
         role: "assistant",
         conversationId: data.conversationId
       }
@@ -188,8 +193,9 @@ chatRouter.post("/message", getUser, zValidator("json", sendMessageSchema), asyn
   }
 });
 
-chatRouter.get("/:characterId/messages", getUser, async (c) => {
-  const user = c.var.user;
+chatRouter.get("/:characterId/messages", requireAuth, async (c) => {
+  const user = c.get("user");
+  if (!user) throw new Error("User not found");
   const { characterId } = c.req.param();
 
   try {
@@ -248,8 +254,8 @@ chatRouter.get("/:characterId/messages", getUser, async (c) => {
   }
 });
 
-chatRouter.post("/:characterId/send", getUser, async (c) => {
-  const user = c.var.user;
+chatRouter.post("/:characterId/send", requireAuth, async (c) => {
+  const user = c.get("user");
   const { characterId } = c.req.param();
 
   try {
@@ -267,7 +273,7 @@ chatRouter.post("/:characterId/send", getUser, async (c) => {
       where: {
         characterId,
         character: {
-          userId: user.id
+          userId: user?.id
         }
       },
       include: {
@@ -279,7 +285,7 @@ chatRouter.post("/:characterId/send", getUser, async (c) => {
       const character = await db.character.findFirst({
         where: {
           id: characterId,
-          userId: user.id
+          userId: user?.id
         }
       });
 
