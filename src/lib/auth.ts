@@ -17,5 +17,5 @@ export const auth = betterAuth({
       enabled: true
     }
   },
-  trustedOrigins: ["http://localhost:3001"]
+  trustedOrigins: ["http://localhost:3001", "https://holo-ai-one.vercel.app"]
 });
