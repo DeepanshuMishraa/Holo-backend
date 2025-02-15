@@ -15,8 +15,8 @@ export const auth = betterAuth({
   }, advanced: {
     crossSubDomainCookies: {
       enabled: true,
-      domain: process.env.FRONTEND_URL as string
-    }
+      domain: process.env.NODE_ENV === "production" ? "https://holo-ai-one.vercel.app" : "http://localhost:3001"
+    },
   },
   trustedOrigins: ["http://localhost:3001", "https://holo-ai-one.vercel.app", "http://localhost:3000"]
 });
