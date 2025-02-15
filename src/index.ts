@@ -6,8 +6,6 @@ import { auth } from "./lib/auth";
 import { logger } from "hono/logger";
 import { authMiddleware } from "./lib/middleware";
 
-export const runtime = 'edge'
-
 const app = new Hono();
 
 app.use("*", logger())
