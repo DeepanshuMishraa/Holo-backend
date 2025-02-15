@@ -12,9 +12,8 @@ const app = new Hono();
 
 app.use("*", logger())
 
-// Apply CORS before any routes
 app.use(
-  "/api/auth/*",
+  "*",  
   cors({
     origin: (origin) => {
       const allowedOrigins = [
@@ -32,7 +31,6 @@ app.use(
 
 app.use("*", authMiddleware);
 
-// Mount the auth handler with the correct pattern
 app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 
 app.route("/api/character", characterRouter).route("/api/chat", chatRouter);
@@ -70,4 +68,3 @@ app.get("/api/ping", (c) => {
 })
 
 export default app;
-
