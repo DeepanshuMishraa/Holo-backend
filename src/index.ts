@@ -24,12 +24,12 @@ app.use(
   })
 );
 
-//debug 
-app.get("/api/debug-cookie", (c) => {
-  const cookie = c.req.header("Cookie")
-  console.log("Received Cookie Header:", cookie)
-  return c.json({ cookie })
-});
+// //debug 
+// app.get("/api/debug-cookie", (c) => {
+//   const cookie = c.req.header("Cookie")
+//   console.log("Received Cookie Header:", cookie)
+//   return c.json({ cookie })
+// });
 
 app.use("*", authMiddleware);
 
