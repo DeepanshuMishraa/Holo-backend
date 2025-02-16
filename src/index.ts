@@ -15,7 +15,7 @@ app.use(
   cors({
     origin: process.env.NODE_ENV === "production" 
       ? ["https://holo-ai-one.vercel.app"]
-      : "http://localhost:3000",
+      : "http://localhost:3001",
     allowMethods: ["POST", "GET", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization", "Cookie"],
     exposeHeaders: ["Set-Cookie", "Content-Length"],
@@ -23,6 +23,13 @@ app.use(
     maxAge: 600,
   })
 );
+
+//debug 
+app.get("/api/debug-cookie", (c) => {
+  const cookie = c.req.header("Cookie")
+  console.log("Received Cookie Header:", cookie)
+  return c.json({ cookie })
+});
 
 app.use("*", authMiddleware);
 
@@ -57,6 +64,8 @@ app.get("/api/health", (c) => {
     lastPing: new Date(lastPingTime).toISOString()
   }, 200);
 })
+
+
 
 app.get("/api/ping", (c) => {
   return new Response("", { status: 204 });
