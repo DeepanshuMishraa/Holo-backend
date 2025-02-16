@@ -1,7 +1,6 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { PrismaClient } from "@prisma/client";
-import type { CookieOptions } from 'better-auth';
 
 const prisma = new PrismaClient();
 export const auth = betterAuth({
@@ -14,16 +13,17 @@ export const auth = betterAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string
     }
   }, 
-  advanced: {
-    crossSubDomainCookies: {
-      enabled: false // Disable cross-subdomain cookies since we're using different domains
-    },
-    sameSite: "none", // Allow cross-site cookie access
-    secure: true, // Ensure cookies are only sent over HTTPS
+  secret:process.env.BETTER_AUTH_SECRET as string,
+  advanced:{
+    defaultCookieAttributes:{
+      sameSite:"none",
+      secure:true,
+      httpOnly:true,
+    }
   },
   trustedOrigins: [
     "https://holo-ai-one.vercel.app",
-    "https://your-backend.vercel.app",
+    "https://chat-backend-vve1.onrender.com",
     "http://localhost:3001",
     "http://localhost:3000"
   ]
