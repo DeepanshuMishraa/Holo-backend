@@ -13,15 +13,12 @@ app.use("*", logger())
 app.use(
   "*",  
   cors({
-    origin: (origin) => {
-      const allowedOrigins = [
-        process.env.FRONTEND_URL || "http://localhost:3001",
-      ];
-      return allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
-    },
+    origin: process.env.NODE_ENV === "production" 
+      ? ["https://holo-ai-one.vercel.app"]
+      : "http://localhost:3000",
     allowMethods: ["POST", "GET", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization", "Cookie"],
-    exposeHeaders: ["Content-Length"],
+    exposeHeaders: ["Set-Cookie", "Content-Length"],
     credentials: true,
     maxAge: 600,
   })

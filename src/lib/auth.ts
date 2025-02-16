@@ -13,13 +13,13 @@ export const auth = betterAuth({
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string
     }
-  }, advanced: {
+  }, 
+  advanced: {
     crossSubDomainCookies: {
-      enabled: true,
-      domain: process.env.NODE_ENV === "production"
-        ? ".holo-ai-one.vercel.app"
-        : "localhost"
+      enabled: false // Disable cross-subdomain cookies since we're using different domains
     },
+    sameSite: "none", // Allow cross-site cookie access
+    secure: true, // Ensure cookies are only sent over HTTPS
   },
   trustedOrigins: [
     "https://holo-ai-one.vercel.app",
