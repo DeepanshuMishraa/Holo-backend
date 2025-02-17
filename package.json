@@ -6,7 +6,7 @@
     "dev": "bun run --watch src/index.ts",
     "postinstall": "bunx prisma generate",
     "start": "bun run src/index.ts",
-    "build": "bunx esbuild --bundle src/index.ts --format=esm --outfile=dist/_worker.js",
+    "build": "bunx esbuild --bundle src/index.ts --platform=node --format=esm --outfile=dist/_worker.js",
     "db:migrate": "bunx prisma migrate dev",
     "db:generate": "bunx prisma generate",
     "db:push": "bunx prisma db push",
