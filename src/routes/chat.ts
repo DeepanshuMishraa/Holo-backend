@@ -162,7 +162,7 @@ chatRouter.post("/message", requireAuth, zValidator("json", sendMessageSchema), 
 
     // Get AI response
     let aiResponseText = "";
-    for await (const chunk of chatWithAI({
+    for await (const chunk of await chatWithAI({
       name: conversation.character.name,
       description: conversation.character.description || "",
       story: conversation.character.story,
@@ -211,8 +211,7 @@ chatRouter.get("/:characterId/messages", requireAuth, async (c) => {
           orderBy: {
             id: 'asc'
           }
-        },
-        character: true
+        }
       }
     });
 
@@ -331,27 +330,14 @@ chatRouter.post("/:characterId/send", requireAuth, async (c) => {
       // Store AI message
       const aiMessage = await db.message.create({
         data: {
-          content: aiResponseText.trim(),
+          content: aiResponseText,
           role: "assistant",
           conversationId: conversation.id
         }
       });
 
       return c.json({
-        messages: [
-          {
-            id: userMessage.id,
-            content: userMessage.content,
-            role: userMessage.role,
-            conversationId: userMessage.conversationId
-          },
-          {
-            id: aiMessage.id,
-            content: aiMessage.content,
-            role: aiMessage.role,
-            conversationId: aiMessage.conversationId
-          }
-        ]
+        message: aiResponseText
       }, 200);
 
     } catch (error) {
