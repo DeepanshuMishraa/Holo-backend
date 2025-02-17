@@ -256,6 +256,7 @@ chatRouter.get("/:characterId/messages", requireAuth, async (c) => {
 
 chatRouter.post("/:characterId/send", requireAuth, async (c) => {
   const user = c.get("user");
+  if (!user) throw new Error("User not found");
   const { characterId } = c.req.param();
 
   try {
@@ -273,7 +274,7 @@ chatRouter.post("/:characterId/send", requireAuth, async (c) => {
       where: {
         characterId,
         character: {
-          userId: user?.id
+          userId: user.id
         }
       },
       include: {
@@ -285,7 +286,7 @@ chatRouter.post("/:characterId/send", requireAuth, async (c) => {
       const character = await db.character.findFirst({
         where: {
           id: characterId,
-          userId: user?.id
+          userId: user.id
         }
       });
 
@@ -316,11 +317,15 @@ chatRouter.post("/:characterId/send", requireAuth, async (c) => {
       }
     });
 
-    // Set up streaming response
+    // Set up streaming response with error handling
     const stream = new ReadableStream({
       async start(controller) {
         try {
           let fullResponse = '';
+          const encoder = new TextEncoder();
+
+          // Send initial newline to establish connection
+          controller.enqueue(encoder.encode('\n'));
 
           // Get AI response as a stream
           for await (const chunk of chatWithAI({
@@ -331,10 +336,10 @@ chatRouter.post("/:characterId/send", requireAuth, async (c) => {
             message: content
           })) {
             fullResponse += chunk;
-            controller.enqueue(new TextEncoder().encode(chunk));
+            controller.enqueue(encoder.encode(chunk));
           }
 
-          // Store the complete AI message after streaming is done
+          // Store the complete AI message
           await db.message.create({
             data: {
               content: fullResponse,
@@ -345,20 +350,26 @@ chatRouter.post("/:characterId/send", requireAuth, async (c) => {
 
           controller.close();
         } catch (error) {
-          controller.error(error);
+          console.error("Streaming Error:", error);
+          // Send error message to client
+          controller.enqueue(encoder.encode(JSON.stringify({ 
+            error: "Failed to generate response" 
+          })));
+          controller.close();
         }
       }
     });
 
     return new Response(stream, {
       headers: {
-        'Content-Type': 'text/plain',
-        'Transfer-Encoding': 'chunked',
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
         'X-Content-Type-Options': 'nosniff'
       }
     });
   } catch (error) {
-    console.log(error);
+    console.error("Route Error:", error);
     return c.json({
       message: "Internal server error",
       error: error instanceof Error ? error.message : "Unknown error"
