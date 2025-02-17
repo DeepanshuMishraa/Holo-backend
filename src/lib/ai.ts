@@ -9,9 +9,9 @@ interface ChatProps {
 }
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
-export const chatWithAI = async function* ({ name, description, story, personality, message }: ChatProps) {
+export async function chatWithAI({ name, description, story, personality, message }: ChatProps) {
   try {
     const prompt = `
     You are ${name}, a unique AI character designed to engage users in immersive conversations. 
@@ -43,16 +43,11 @@ export const chatWithAI = async function* ({ name, description, story, personali
     User's message: ${message}
     `;
 
-    const result = await model.generateContentStream(prompt);
-
-    for await (const chunk of result.stream) {
-      const chunkText = chunk.text();
-      if (chunkText) {
-        yield chunkText;
-      }
-    }
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text();
   } catch (error) {
     console.error("AI Chat Error:", error);
-    throw error; // Propagate error to be handled by the route
+    throw error;
   }
 }

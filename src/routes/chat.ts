@@ -317,57 +317,34 @@ chatRouter.post("/:characterId/send", requireAuth, async (c) => {
       }
     });
 
-    // Set up streaming response with error handling
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          let fullResponse = '';
-          const encoder = new TextEncoder();
+    try {
+      // Get AI response
+      const aiResponseText = await chatWithAI({
+        name: conversation.character.name,
+        description: conversation.character.description || "",
+        story: conversation.character.story,
+        personality: conversation.character.personality,
+        message: content
+      });
 
-          // Send initial newline to establish connection
-          controller.enqueue(encoder.encode('\n'));
-
-          // Get AI response as a stream
-          for await (const chunk of chatWithAI({
-            name: conversation.character.name,
-            description: conversation.character.description || "",
-            story: conversation.character.story,
-            personality: conversation.character.personality,
-            message: content
-          })) {
-            fullResponse += chunk;
-            controller.enqueue(encoder.encode(chunk));
-          }
-
-          // Store the complete AI message
-          await db.message.create({
-            data: {
-              content: fullResponse,
-              role: "assistant",
-              conversationId: conversation.id
-            }
-          });
-
-          controller.close();
-        } catch (error) {
-          console.error("Streaming Error:", error);
-          // Send error message to client
-          controller.enqueue(encoder.encode(JSON.stringify({ 
-            error: "Failed to generate response" 
-          })));
-          controller.close();
+      // Store AI message
+      const aiMessage = await db.message.create({
+        data: {
+          content: aiResponseText,
+          role: "assistant",
+          conversationId: conversation.id
         }
-      }
-    });
+      });
 
-    return new Response(stream, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-        'X-Content-Type-Options': 'nosniff'
-      }
-    });
+      return new Response(aiResponseText);
+
+    } catch (error) {
+      console.error("AI Response Error:", error);
+      return c.json({
+        message: "Failed to generate AI response",
+        error: error instanceof Error ? error.message : "Unknown error"
+      }, 500);
+    }
   } catch (error) {
     console.error("Route Error:", error);
     return c.json({

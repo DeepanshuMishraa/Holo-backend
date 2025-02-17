@@ -5,15 +5,6 @@ import { cors } from "hono/cors";
 import { auth } from "./lib/auth";
 import { logger } from "hono/logger";
 import { authMiddleware } from "./lib/middleware";
-import * as webStreams from 'web-streams-polyfill';
-
-// Add these to the global scope
-if (!global.ReadableStream) {
-  (global as any).ReadableStream = webStreams.ReadableStream;
-}
-if (!global.TextDecoderStream) {
-  (global as any).TextDecoderStream = webStreams.TextDecoderStream;
-}
 
 const app = new Hono();
 
