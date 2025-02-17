@@ -11,10 +11,10 @@ const app = new Hono();
 app.use("*", logger())
 
 app.use(
-  "*",  
+  "*",
   cors({
-    origin: process.env.NODE_ENV === "production" 
-      ? ["https://holo-ai-one.vercel.app"]
+    origin: process.env.NODE_ENV === "production"
+      ? ["https://holo-ai-one.vercel.app", "https://holo.deepanshumishra.me"]
       : "http://localhost:3001",
     allowMethods: ["POST", "GET", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization", "Cookie"],
