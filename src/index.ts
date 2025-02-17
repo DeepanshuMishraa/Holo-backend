@@ -1,3 +1,4 @@
+import { ReadableStream, TextDecoderStream } from 'web-streams-polyfill/ponyfill';
 import { Hono } from "hono";
 import { characterRouter } from "./routes/character";
 import { chatRouter } from "./routes/chat";
@@ -5,6 +6,14 @@ import { cors } from "hono/cors";
 import { auth } from "./lib/auth";
 import { logger } from "hono/logger";
 import { authMiddleware } from "./lib/middleware";
+
+// Add these to the global scope
+if (!global.ReadableStream) {
+  (global as any).ReadableStream = ReadableStream;
+}
+if (!global.TextDecoderStream) {
+  (global as any).TextDecoderStream = TextDecoderStream;
+}
 
 const app = new Hono();
 
