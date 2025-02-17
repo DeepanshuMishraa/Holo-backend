@@ -182,7 +182,7 @@ chatRouter.post("/message", requireAuth, zValidator("json", sendMessageSchema), 
     });
 
     return c.json({
-      messages: [userMessage, aiMessage].sort((a, b) => a.id > b.id ? 1 : -1)
+      aiResponseText
     }, 200);
   } catch (error) {
     console.log(error);
