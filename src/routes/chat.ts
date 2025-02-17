@@ -211,7 +211,8 @@ chatRouter.get("/:characterId/messages", requireAuth, async (c) => {
           orderBy: {
             id: 'asc'
           }
-        }
+        },
+        character: true
       }
     });
 
@@ -330,13 +331,28 @@ chatRouter.post("/:characterId/send", requireAuth, async (c) => {
       // Store AI message
       const aiMessage = await db.message.create({
         data: {
-          content: aiResponseText,
+          content: aiResponseText.trim(),
           role: "assistant",
           conversationId: conversation.id
         }
       });
 
-      return new Response(aiResponseText);
+      return c.json({
+        messages: [
+          {
+            id: userMessage.id,
+            content: userMessage.content,
+            role: userMessage.role,
+            conversationId: userMessage.conversationId
+          },
+          {
+            id: aiMessage.id,
+            content: aiMessage.content,
+            role: aiMessage.role,
+            conversationId: aiMessage.conversationId
+          }
+        ]
+      }, 200);
 
     } catch (error) {
       console.error("AI Response Error:", error);
