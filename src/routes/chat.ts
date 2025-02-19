@@ -337,7 +337,7 @@ chatRouter.post("/:characterId/send", requireAuth, async (c) => {
       });
 
       return c.json({
-        message: aiResponseText
+        aiResponseText
       }, 200);
 
     } catch (error) {
