@@ -21,18 +21,7 @@ export async function chatWithAI({
   history = []
 }: ChatProps) {
   try {
-    const chat = model.startChat({
-      history: history.map(msg => ({
-        role: msg.role as 'user' | 'assistant',
-        parts: [{ text: msg.content }] as Part[],
-      })) as Content[],
-      generationConfig: {
-        temperature: 0.9,
-        topK: 1,
-        topP: 1,
-      }
-    });
-
+    // Send base prompt as first user message
     const basePrompt = `
     You are ${name}, a unique AI character designed to engage users in immersive conversations. 
 
@@ -59,13 +48,23 @@ export async function chatWithAI({
     - If asked about your existence, respond in a way that aligns with your story rather than acknowledging you are an AI.
     `;
 
-    // Send the base prompt first to set the context
-    await chat.sendMessage(basePrompt);
+    const chat = model.startChat({
+      history: [
+        { role: 'user', parts: [{ text: basePrompt }] as Part[] },
+        ...history.map(msg => ({
+          role: msg.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: msg.content }] as Part[],
+        }))
+      ] as Content[],
+      generationConfig: {
+        temperature: 0.9,
+        topK: 1,
+        topP: 1,
+      }
+    });
 
-    // Send the user's message and get the response
     const result = await chat.sendMessage(message);
-    const response = await result.response;
-    return response.text();
+    return result.response.text();
   } catch (error) {
     console.error("AI Chat Error:", error);
     throw error;

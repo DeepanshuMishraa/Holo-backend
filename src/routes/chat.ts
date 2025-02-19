@@ -319,7 +319,6 @@ chatRouter.post("/:characterId/send", requireAuth, async (c) => {
       take: 10 // Limit to last 10 messages for context
     });
 
-    // Store user message
     await db.message.create({
       data: {
         content,
@@ -328,50 +327,41 @@ chatRouter.post("/:characterId/send", requireAuth, async (c) => {
       }
     });
 
-    // Set up streaming response
-    return new Response(
-      new ReadableStream({
-        async start(controller) {
-          try {
-            const stream = await chatWithAI({
-              name: conversation.character.name,
-              description: conversation.character.description || "",
-              story: conversation.character.story,
-              personality: conversation.character.personality,
-              message: content,
-              history: previousMessages.map(msg => ({
-                role: msg.role as 'user' | 'assistant',
-                content: msg.content
-              }))
-            });
+    try {
+      const response = await chatWithAI({
+        name: conversation.character.name,
+        description: conversation.character.description || "",
+        story: conversation.character.story,
+        personality: conversation.character.personality,
+        message: content,
+        history: previousMessages.map(msg => ({
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content
+        }))
+      });
 
-            let fullResponse = '';
-            for await (const chunk of stream) {
-              fullResponse += chunk;
-              controller.enqueue(new TextEncoder().encode(chunk));
-            }
-
-            // Store AI message after streaming is complete
-            await db.message.create({
-              data: {
-                content: fullResponse,
-                role: "assistant",
-                conversationId: conversation.id
-              }
-            });
-
-            controller.close();
-          } catch (error) {
-            controller.error(error);
-          }
+      await db.message.create({
+        data: {
+          content: response,
+          role: "assistant",
+          conversationId: conversation.id
         }
-      }),
-      {
+      });
+
+      // Return just the text content instead of a JSON object
+      return new Response(response, {
         headers: {
           'Content-Type': 'text/plain; charset=utf-8'
         }
-      }
-    );
+      });
+
+    } catch (error) {
+      console.error("Route Error:", error);
+      return c.json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error"
+      }, 500);
+    }
 
   } catch (error) {
     console.error("Route Error:", error);
