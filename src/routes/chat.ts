@@ -308,6 +308,17 @@ chatRouter.post("/:characterId/send", requireAuth, async (c) => {
       });
     }
 
+    // Get previous messages for context
+    const previousMessages = await db.message.findMany({
+      where: {
+        conversationId: conversation.id
+      },
+      orderBy: {
+        id: 'asc'
+      },
+      take: 10 // Limit to last 10 messages for context
+    });
+
     // Store user message
     await db.message.create({
       data: {
@@ -327,7 +338,11 @@ chatRouter.post("/:characterId/send", requireAuth, async (c) => {
               description: conversation.character.description || "",
               story: conversation.character.story,
               personality: conversation.character.personality,
-              message: content
+              message: content,
+              history: previousMessages.map(msg => ({
+                role: msg.role as 'user' | 'assistant',
+                content: msg.content
+              }))
             });
 
             let fullResponse = '';

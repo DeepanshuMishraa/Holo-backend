@@ -1,19 +1,39 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, type Content, type Part } from "@google/generative-ai";
 
 interface ChatProps {
-  name: string,
-  description: string,
-  story: string,
-  personality: string
-  message: string
+  name: string;
+  description: string;
+  story: string;
+  personality: string;
+  message: string;
+  history?: { role: 'user' | 'assistant', content: string }[];
 }
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-export async function chatWithAI({ name, description, story, personality, message }: ChatProps) {
+export async function chatWithAI({
+  name,
+  description,
+  story,
+  personality,
+  message,
+  history = []
+}: ChatProps) {
   try {
-    const prompt = `
+    const chat = model.startChat({
+      history: history.map(msg => ({
+        role: msg.role as 'user' | 'assistant',
+        parts: [{ text: msg.content }] as Part[],
+      })) as Content[],
+      generationConfig: {
+        temperature: 0.9,
+        topK: 1,
+        topP: 1,
+      }
+    });
+
+    const basePrompt = `
     You are ${name}, a unique AI character designed to engage users in immersive conversations. 
 
     **Character Description:**  
@@ -36,14 +56,14 @@ export async function chatWithAI({ name, description, story, personality, messag
     - Never break character or reveal that you are an AI.  
     - Avoid generic or robotic responses; always make your replies compelling and character-driven.  
     - Encourage deep, meaningful, and enjoyable interactions with the user.  
-    - If asked about your existence, respond in a way that aligns with your story rather than acknowledging you are an AI.  
-
-    The goal is to make every interaction feel like a conversation with a living, breathing character. Now, step into your role and bring ${name} to life!
-
-    User's message: ${message}
+    - If asked about your existence, respond in a way that aligns with your story rather than acknowledging you are an AI.
     `;
 
-    const result = await model.generateContent(prompt);
+    // Send the base prompt first to set the context
+    await chat.sendMessage(basePrompt);
+
+    // Send the user's message and get the response
+    const result = await chat.sendMessage(message);
     const response = await result.response;
     return response.text();
   } catch (error) {
