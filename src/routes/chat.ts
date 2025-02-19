@@ -309,7 +309,7 @@ chatRouter.post("/:characterId/send", requireAuth, async (c) => {
     }
 
     // Store user message
-    const userMessage = await db.message.create({
+    await db.message.create({
       data: {
         content,
         role: "user",
@@ -317,36 +317,47 @@ chatRouter.post("/:characterId/send", requireAuth, async (c) => {
       }
     });
 
-    try {
-      // Get AI response
-      const aiResponseText = await chatWithAI({
-        name: conversation.character.name,
-        description: conversation.character.description || "",
-        story: conversation.character.story,
-        personality: conversation.character.personality,
-        message: content
-      });
+    // Set up streaming response
+    return new Response(
+      new ReadableStream({
+        async start(controller) {
+          try {
+            const stream = await chatWithAI({
+              name: conversation.character.name,
+              description: conversation.character.description || "",
+              story: conversation.character.story,
+              personality: conversation.character.personality,
+              message: content
+            });
 
-      // Store AI message
-      const aiMessage = await db.message.create({
-        data: {
-          content: aiResponseText,
-          role: "assistant",
-          conversationId: conversation.id
+            let fullResponse = '';
+            for await (const chunk of stream) {
+              fullResponse += chunk;
+              controller.enqueue(new TextEncoder().encode(chunk));
+            }
+
+            // Store AI message after streaming is complete
+            await db.message.create({
+              data: {
+                content: fullResponse,
+                role: "assistant",
+                conversationId: conversation.id
+              }
+            });
+
+            controller.close();
+          } catch (error) {
+            controller.error(error);
+          }
         }
-      });
+      }),
+      {
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8'
+        }
+      }
+    );
 
-      return c.json({
-        aiResponseText
-      }, 200);
-
-    } catch (error) {
-      console.error("AI Response Error:", error);
-      return c.json({
-        message: "Failed to generate AI response",
-        error: error instanceof Error ? error.message : "Unknown error"
-      }, 500);
-    }
   } catch (error) {
     console.error("Route Error:", error);
     return c.json({
