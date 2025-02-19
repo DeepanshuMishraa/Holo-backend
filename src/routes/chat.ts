@@ -216,7 +216,6 @@ chatRouter.get("/:characterId/messages", requireAuth, async (c) => {
     });
 
     if (!conversation) {
-      // Create a new conversation if none exists
       const character = await db.character.findFirst({
         where: {
           id: characterId,
@@ -269,7 +268,6 @@ chatRouter.post("/:characterId/send", requireAuth, async (c) => {
       }, 400);
     }
 
-    // Get or create conversation
     let conversation = await db.conversation.findFirst({
       where: {
         characterId,

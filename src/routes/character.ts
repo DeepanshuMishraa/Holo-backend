@@ -59,6 +59,21 @@ characterRouter.get("/bulk", requireAuth, async (c) => {
   }
 });
 
+characterRouter.get("/characters", async (c) => {
+  try {
+    const characters = await db.character.findMany();
+    return c.json({
+      characters
+    }, 200);
+  } catch (error) {
+    console.log(error);
+    return c.json({
+      message: "Internal server error",
+      error: error instanceof Error ? error.message : "Unknown error"
+    }, 500);
+  }
+});
+
 characterRouter.get("/", requireAuth, async (c) => {
   const user = c.get("user");
   if (!user) throw new Error("User not found");
