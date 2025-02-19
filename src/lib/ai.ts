@@ -56,11 +56,6 @@ export async function chatWithAI({
           parts: [{ text: msg.content }] as Part[],
         }))
       ] as Content[],
-      generationConfig: {
-        temperature: 0.9,
-        topK: 1,
-        topP: 1,
-      }
     });
 
     const result = await chat.sendMessage(message);
