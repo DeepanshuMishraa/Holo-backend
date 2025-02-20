@@ -74,14 +74,36 @@ characterRouter.get("/characters", async (c) => {
   }
 });
 
-characterRouter.get("/", requireAuth, async (c) => {
-  const user = c.get("user");
-  if (!user) throw new Error("User not found");
+characterRouter.get("/search", async (c) => {
+  try {
+    const { q } = c.req.query();
+    const characters = await db.character.findMany({
+      where: {
+        OR: [
+          { name: { contains: q, mode: 'insensitive' } },
+          { description: { contains: q, mode: 'insensitive' } },
+          { personality: { contains: q, mode: 'insensitive' } },
+        ]
+      }
+    });
 
+    return c.json({
+      characters
+    }, 200);
+  } catch (error) {
+    console.log(error);
+    return c.json({
+      message: "Internal server error",
+      error: error instanceof Error ? error.message : "Unknown error"
+    }, 500);
+  }
+});
+
+characterRouter.get("/:id", requireAuth, async (c) => {
   try {
     const character = await db.character.findFirst({
       where: {
-        userId: user.id
+        id: c.req.param("id")
       }
     });
 
@@ -209,6 +231,35 @@ characterRouter.delete("/:id", requireAuth, async (c) => {
     }, 200);
   } catch (error) {
     console.log(error);
+    return c.json({
+      message: "Internal server error",
+      error: error instanceof Error ? error.message : "Unknown error"
+    }, 500);
+  }
+});
+
+characterRouter.get("/search", async (c) => {
+  try {
+    const { q } = c.req.query();
+
+    if (!q) {
+      return c.json({ characters: [] });
+    }
+
+    const characters = await db.character.findMany({
+      where: {
+        OR: [
+          { name: { contains: q, mode: 'insensitive' } },
+          { description: { contains: q, mode: 'insensitive' } },
+          { personality: { contains: q, mode: 'insensitive' } },
+        ]
+      },
+      take: 5 // Limit results
+    });
+
+    return c.json({ characters });
+  } catch (error) {
+    console.error(error);
     return c.json({
       message: "Internal server error",
       error: error instanceof Error ? error.message : "Unknown error"
