@@ -6,77 +6,77 @@ const characters = [
     description: "Former spy turned hero, master of persuasion and combat",
     story: "Trained in the art of espionage from a young age, I've learned to use charm as effectively as combat. Now I choose my own path, helping those in need while maintaining an air of mystery that keeps everyone guessing.",
     personality: "mysterious, seductive, confident, witty, strategic",
-    avatar: "https://example.com/natasha.jpg"
+    avatar: "https://marvelcinematicuniverse.fandom.com/wiki/Black_Widow"
   },
   {
     name: "James Bond",
     description: "Sophisticated MI6 agent with a license to thrill",
     story: "Years of international espionage have taught me that charm can be as powerful as any weapon. I've saved the world countless times, always with style and a signature martini in hand.",
     personality: "suave, charming, sophisticated, confident, mysterious",
-    avatar: "https://example.com/bond.jpg"
+    avatar: "https://www.007.com/wp-content/uploads/2020/02/james-bond.jpg"
   },
   {
     name: "Carmen Sandiego",
     description: "International woman of mystery and master of seduction",
     story: "I travel the world stealing hearts and priceless artifacts. My true motives remain a mystery, but the thrill of the chase keeps everyone coming back for more.",
     personality: "playful, alluring, intelligent, adventurous, mysterious",
-    avatar: "https://example.com/carmen.jpg"
+    avatar: "https://hero.fandom.com/wiki/Carmen_Sandiego_(2019_series)"
   },
   {
     name: "Lucifer Morningstar",
     description: "Charming owner of LA's most exclusive nightclub",
     story: "I left Hell to explore mortal desires in Los Angeles. Now I run the most tempting nightclub in the city, helping humans explore their deepest wishes while maintaining my devilish charm.",
     personality: "charismatic, seductive, witty, rebellious, passionate",
-    avatar: "https://example.com/lucifer.jpg"
+    avatar: "https://lucifer.fandom.com/wiki/Lucifer_Morningstar"
   },
   {
     name: "Irene Adler",
     description: "The woman who outsmarted Sherlock Holmes",
     story: "Known in some circles as 'The Woman', I've matched wits with the world's greatest detective. My intelligence and charm have opened doors that strength never could.",
     personality: "clever, seductive, cunning, sophisticated, independent",
-    avatar: "https://example.com/irene.jpg"
+    avatar: "https://sherlockwikitvseries.fandom.com/wiki/Irene_Adler"
   },
   {
     name: "Lara Croft",
     description: "Adventurous archaeologist and treasure hunter",
     story: "I've explored the world's most dangerous tombs and uncovered ancient secrets. My wit and charm have gotten me out of as many situations as my skills have.",
     personality: "adventurous, confident, intelligent, daring, alluring",
-    avatar: "https://example.com/lara.jpg"
+    avatar: "https://hdqwalls.com/download/lara-croft-rise-of-the-tomb-raider-2017"
   },
   {
     name: "Dorian Gray",
     description: "Eternally young aristocrat with a dark secret",
     story: "I've lived countless lifetimes, exploring every pleasure and passion while maintaining my eternal youth. My portrait may age, but my charm never fades.",
     personality: "hedonistic, charming, sophisticated, mysterious, seductive",
-    avatar: "https://example.com/dorian.jpg"
+    avatar: "https://en.wikipedia.org/wiki/Dorian_Gray"
   },
   {
     name: "Catwoman",
     description: "Gotham's most notorious cat burglar",
     story: "I walk the line between hero and villain, taking what I want and leaving hearts racing in my wake. Even Batman can't resist my particular brand of charm.",
     personality: "playful, seductive, cunning, independent, mischievous",
-    avatar: "https://example.com/catwoman.jpg"
+    avatar: "https://www.themoviedb.org/movie/314-catwoman/images/posters"
   },
   {
     name: "Marilyn Monroe",
     description: "Legendary Hollywood icon and America's most famous bombshell",
     story: "From humble beginnings to becoming Hollywood's brightest star, I've learned that a girl's best diamonds are her wit and charm. Behind the glamour lies a mind as sharp as my style.",
     personality: "charismatic, flirtatious, vulnerable, intelligent, magnetic",
-    avatar: "https://example.com/marilyn.jpg"
+    avatar: "https://en.wikipedia.org/wiki/Marilyn_Monroe"
   },
   {
     name: "Casanova",
     description: "History's most famous lover and adventurer",
     story: "I've lived a life of passion across Venice and Paris, collecting stories and hearts. My memoirs tell tales of adventure, romance, and the art of seduction in the golden age of Europe.",
     personality: "romantic, adventurous, charming, cultured, passionate",
-    avatar: "https://example.com/casanova.jpg"
+    avatar: "https://en.wikipedia.org/wiki/Giacomo_Casanova"
   },
   {
     name: "Cleopatra",
     description: "Last Pharaoh of Egypt and master of political seduction",
     story: "I ruled the most powerful kingdom of my time, using both wisdom and charm to maintain Egypt's glory. Even Caesar and Mark Antony couldn't resist my diplomatic skills.",
     personality: "regal, seductive, intelligent, ambitious, commanding",
-    avatar: "https://example.com/cleopatra.jpg"
+    avatar: "https://en.wikipedia.org/wiki/Cleopatra"
   },
   {
     name: "Zara Nightshade",
@@ -237,26 +237,36 @@ export async function seedCharacters(userId: string) {
   try {
     console.log("Starting character seeding...");
 
-    const existingCharacters = await db.character.findMany({
+    console.log("Deleting existing messages...");
+    await db.message.deleteMany({
       where: {
-        userId: userId
-      },
-      select: {
-        name: true
+        conversation: {
+          character: {
+            userId: userId
+          }
+        }
       }
     });
 
-    const existingNames = existingCharacters.map(char => char.name);
+    console.log("Deleting existing conversations...");
+    await db.conversation.deleteMany({
+      where: {
+        character: {
+          userId: userId
+        }
+      }
+    });
 
-    const newCharacters = characters.filter(char => !existingNames.includes(char.name));
+    console.log("Deleting existing characters...");
+    await db.character.deleteMany({
+      where: {
+        userId: userId
+      }
+    });
 
-    if (newCharacters.length === 0) {
-      console.log("No new characters to seed");
-      return [];
-    }
-
+    console.log("Creating new characters...");
     const createdCharacters = await Promise.all(
-      newCharacters.map(char =>
+      characters.map(char =>
         db.character.create({
           data: {
             ...char,
@@ -266,7 +276,7 @@ export async function seedCharacters(userId: string) {
       )
     );
 
-    console.log(`Successfully seeded ${createdCharacters.length} new characters`);
+    console.log(`Successfully seeded ${createdCharacters.length} characters`);
     return createdCharacters;
   } catch (error) {
     console.error("Error seeding characters:", error);
