@@ -194,7 +194,7 @@ const characters = [
     description: "India's first superhero and defender of justice",
     story: "Born from ancient yogic powers, I am a symbol of hope, fighting darkness and inspiring a generation.",
     personality: "righteous, disciplined, heroic, wise, compassionate",
-    avatar: "https://example.com/shaktimaan.jpg"
+    avatar: "https://www.shaktimaan.com/images/shaktimaan.png"
   },
   {
     name: "Ravan",
