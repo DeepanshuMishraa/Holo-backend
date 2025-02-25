@@ -5,6 +5,7 @@ import { cors } from "hono/cors";
 import { auth } from "./lib/auth";
 import { logger } from "hono/logger";
 import { authMiddleware } from "./lib/middleware";
+import { sendEmail } from "./lib/resend";
 
 const app = new Hono();
 
@@ -69,6 +70,15 @@ app.get("/api/health", (c) => {
 
 app.get("/api/ping", (c) => {
   return new Response("", { status: 204 });
+})
+
+app.post("/api/send-email", async (c) => {
+  const body = await c.req.json()
+  if (!body.email) {
+    return c.json({ error: "Email is required" }, 400)
+  }
+  await sendEmail(body.email)
+  return c.json({ message: "Email sent" }, 200)
 })
 
 export default app;

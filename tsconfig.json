@@ -9,6 +9,7 @@
     "module": "ESNext",
     "moduleDetection": "force",
     "jsx": "react-jsx",
+    "jsxImportSource": "react",
     "allowJs": true,
     "rootDir": "./src",
     "outDir": "./dist",
