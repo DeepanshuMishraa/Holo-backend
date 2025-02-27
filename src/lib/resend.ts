@@ -17,6 +17,14 @@ export const sendEmail = async (email: string) => {
     react: EmailTemplate({ email }) as ReactElement
   })
 
+  await db.waitlist.create({
+    data: {
+      email,
+      createdAt: new Date(),
+    }
+  })
+
+
   if (error) {
     console.error(error)
     throw new Error("Failed to send email")
