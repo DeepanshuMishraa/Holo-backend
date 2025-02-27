@@ -14,7 +14,8 @@ export const sendEmail = async (email: string) => {
     from: process.env.RESEND_FROM as string,
     to: email,
     subject: "Welcome to the holo.ai waitlist",
-    react: EmailTemplate({ email }) as ReactElement
+    react: await EmailTemplate({ email }),
+    html: (await EmailTemplate({ email }))?.toString() || ''
   })
 
   await db.waitlist.create({
