@@ -199,11 +199,30 @@ chatRouter.get("/:characterId/messages", requireAuth, async (c) => {
   const { characterId } = c.req.param();
 
   try {
+    // First verify the character exists
+    const character = await db.character.findUnique({
+      where: {
+        id: characterId
+      }
+    });
+
+    if (!character) {
+      return c.json({
+        message: "Character not found",
+      }, 404);
+    }
+
+    // Find user's conversation with this character through messages
     let conversation = await db.conversation.findFirst({
       where: {
         characterId,
-        character: {
-          userId: user.id
+        message: {
+          some: {
+            role: 'user',
+            content: {
+              contains: user.id
+            }
+          }
         }
       },
       include: {
@@ -216,18 +235,6 @@ chatRouter.get("/:characterId/messages", requireAuth, async (c) => {
     });
 
     if (!conversation) {
-      const character = await db.character.findFirst({
-        where: {
-          id: characterId,
-          userId: user.id
-        }
-      });
-
-      if (!character) {
-        return c.json({
-          message: "Character not found or unauthorized",
-        }, 404);
-      }
 
       conversation = await db.conversation.create({
         data: {
@@ -239,10 +246,19 @@ chatRouter.get("/:characterId/messages", requireAuth, async (c) => {
           message: true
         }
       });
+
+
+      await db.message.create({
+        data: {
+          content: user.id,
+          role: 'user',
+          conversationId: conversation.id
+        }
+      });
     }
 
     return c.json({
-      messages: conversation.message
+      messages: conversation.message.filter(msg => msg.role !== 'user' || msg.content !== user.id)
     }, 200);
   } catch (error) {
     console.log(error);
@@ -268,25 +284,30 @@ chatRouter.post("/:characterId/send", requireAuth, async (c) => {
       }, 400);
     }
 
-    // First verify character ownership
-    const character = await db.character.findFirst({
+    // First verify character exists
+    const character = await db.character.findUnique({
       where: {
-        id: characterId,
-        userId: user.id
+        id: characterId
       }
     });
 
     if (!character) {
       return c.json({
-        message: "Character not found or unauthorized",
+        message: "Character not found",
       }, 404);
     }
 
+    // Find user's conversation with this character through messages
     let conversation = await db.conversation.findFirst({
       where: {
         characterId,
-        character: {
-          userId: user.id
+        message: {
+          some: {
+            role: 'user',
+            content: {
+              contains: user.id
+            }
+          }
         }
       },
       include: {
@@ -295,6 +316,7 @@ chatRouter.post("/:characterId/send", requireAuth, async (c) => {
     });
 
     if (!conversation) {
+      // Create a new conversation
       conversation = await db.conversation.create({
         data: {
           name: `Chat with ${character.name}`,
@@ -305,12 +327,24 @@ chatRouter.post("/:characterId/send", requireAuth, async (c) => {
           character: true
         }
       });
+
+      // Add an initial system message to track user ownership
+      await db.message.create({
+        data: {
+          content: user.id,
+          role: 'user',
+          conversationId: conversation.id
+        }
+      });
     }
 
     // Get previous messages for context
     const previousMessages = await db.message.findMany({
       where: {
-        conversationId: conversation.id
+        conversationId: conversation.id,
+        NOT: {
+          content: user.id
+        }
       },
       orderBy: {
         id: 'asc'

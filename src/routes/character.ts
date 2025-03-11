@@ -101,20 +101,16 @@ characterRouter.get("/search", async (c) => {
 
 characterRouter.get("/:id", requireAuth, async (c) => {
   try {
-    const user = c.get("user");
-    if (!user) throw new Error("User not found");
-
     const { id } = c.req.param();
-    const character = await db.character.findFirst({
+    const character = await db.character.findUnique({
       where: {
-        id: id,
-        userId: user.id
+        id: id
       }
     });
 
     if (!character) {
       return c.json({
-        message: "Character not found or unauthorized",
+        message: "Character not found",
       }, 404);
     }
 
