@@ -181,17 +181,29 @@ export async function seedCharacters(userId: string) {
 
     console.log("Creating new characters...");
     const createdCharacters = await Promise.all(
-      characters.map(char =>
-        db.character.create({
+      characters.map(async char => {
+        // Create character first
+        const character = await db.character.create({
           data: {
             ...char,
             userId: userId
           }
-        })
-      )
+        });
+
+        // Create an initial conversation for each character
+        await db.conversation.create({
+          data: {
+            name: `Chat with ${character.name}`,
+            description: `Initial conversation with ${character.name}`,
+            characterId: character.id,
+          }
+        });
+
+        return character;
+      })
     );
 
-    console.log(`Successfully seeded ${createdCharacters.length} characters`);
+    console.log(`Successfully seeded ${createdCharacters.length} characters with initial conversations`);
     return createdCharacters;
   } catch (error) {
     console.error("Error seeding characters:", error);
@@ -200,7 +212,7 @@ export async function seedCharacters(userId: string) {
 }
 
 if (import.meta.main) {
-  const DEFAULT_USER_ID = 'bhrV2HjrPVbUBLfgIP3Sy2mc0Yk197yo';
+  const DEFAULT_USER_ID = 'P07mjWcQOGW2SqvMEbweBwAGaMfbdN1O';
 
   console.log('Starting seed process...');
   await seedCharacters(DEFAULT_USER_ID)

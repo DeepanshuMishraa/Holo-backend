@@ -268,6 +268,20 @@ chatRouter.post("/:characterId/send", requireAuth, async (c) => {
       }, 400);
     }
 
+    // First verify character ownership
+    const character = await db.character.findFirst({
+      where: {
+        id: characterId,
+        userId: user.id
+      }
+    });
+
+    if (!character) {
+      return c.json({
+        message: "Character not found or unauthorized",
+      }, 404);
+    }
+
     let conversation = await db.conversation.findFirst({
       where: {
         characterId,
@@ -281,19 +295,6 @@ chatRouter.post("/:characterId/send", requireAuth, async (c) => {
     });
 
     if (!conversation) {
-      const character = await db.character.findFirst({
-        where: {
-          id: characterId,
-          userId: user.id
-        }
-      });
-
-      if (!character) {
-        return c.json({
-          message: "Character not found or unauthorized",
-        }, 404);
-      }
-
       conversation = await db.conversation.create({
         data: {
           name: `Chat with ${character.name}`,

@@ -101,42 +101,20 @@ characterRouter.get("/search", async (c) => {
 
 characterRouter.get("/:id", requireAuth, async (c) => {
   try {
+    const user = c.get("user");
+    if (!user) throw new Error("User not found");
+
+    const { id } = c.req.param();
     const character = await db.character.findFirst({
       where: {
-        id: c.req.param("id")
+        id: id,
+        userId: user.id
       }
     });
 
     if (!character) {
       return c.json({
-        message: "No character found",
-      }, 404);
-    }
-
-    return c.json({
-      character
-    }, 200);
-  } catch (error) {
-    console.log(error);
-    return c.json({
-      message: "Internal server error",
-      error: error instanceof Error ? error.message : "Unknown error"
-    }, 500);
-  }
-});
-
-characterRouter.get("/:id", requireAuth, async (c) => {
-  try {
-    const { id } = c.req.param();
-    const character = await db.character.findUnique({
-      where: {
-        id: id
-      }
-    });
-
-    if (!character) {
-      return c.json({
-        message: "Character not found",
+        message: "Character not found or unauthorized",
       }, 404);
     }
 
