@@ -167,7 +167,8 @@ chatRouter.post("/message", requireAuth, zValidator("json", sendMessageSchema), 
       description: conversation.character.description || "",
       story: conversation.character.story,
       personality: conversation.character.personality,
-      message: data.content
+      message: data.content,
+      env: c.env
     })) {
       aiResponseText += chunk;
     }
@@ -370,7 +371,8 @@ chatRouter.post("/:characterId/send", requireAuth, async (c) => {
         history: previousMessages.map(msg => ({
           role: msg.role as 'user' | 'assistant',
           content: msg.content
-        }))
+        })),
+        env: c.env
       });
 
       await db.message.create({

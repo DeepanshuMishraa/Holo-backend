@@ -1,17 +1,20 @@
 import type { MiddlewareHandler } from "hono";
-import { auth } from "./auth";
+import type { Env } from "../types/env";
 
 // Define the type for our auth middleware
 export type AuthHonoEnv = {
   Variables: {
-    user: typeof auth.$Infer.Session.user | null;
-    session: typeof auth.$Infer.Session.session | null;
+    user: any | null;
+    session: any | null;
+    auth: any;
   };
+  Bindings: Env;
 };
 
 // Create the authentication middleware
 export const authMiddleware: MiddlewareHandler<AuthHonoEnv> = async (c, next) => {
   try {
+    const auth = c.get('auth');
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
 
     if (!session) {
