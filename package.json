@@ -7,6 +7,8 @@
     "postinstall": "bunx prisma generate",
     "start": "node dist/_worker.js",
     "build": "bunx esbuild --bundle src/index.ts --platform=node --format=esm --outfile=dist/_worker.js && cp node_modules/@prisma/client/libquery_engine-* dist/ && cp node_modules/@prisma/client/schema.prisma dist/",
+    "vercel-build":"bunx esbuild --bundle src/index.ts --platform=node --format=esm --outfile=dist/_worker.js && bun db:migrate && bun db:generate"
+    ,
     "db:migrate": "bunx prisma migrate dev",
     "db:generate": "bunx prisma generate",
     "db:push": "bunx prisma db push",
