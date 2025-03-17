@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "bun run --watch src/index.ts",
     "postinstall": "bunx prisma generate",
-    "start": "bun run src/index.ts",
-    "build": "bunx esbuild --bundle src/index.ts --platform=node --format=esm --outfile=dist/_worker.js",
+    "start": "node dist/_worker.js",
+    "build": "bunx esbuild --bundle src/index.ts --platform=node --format=esm --outfile=dist/_worker.js && cp node_modules/@prisma/client/libquery_engine-* dist/ && cp node_modules/@prisma/client/schema.prisma dist/",
     "db:migrate": "bunx prisma migrate dev",
     "db:generate": "bunx prisma generate",
     "db:push": "bunx prisma db push",

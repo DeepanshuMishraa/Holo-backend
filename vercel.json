@@ -2,13 +2,8 @@
   "version": 2,
   "builds": [
     {
-      "src": "src/index.ts",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": [
-          "dist/**"
-        ]
-      }
+      "src": "dist/_worker.js",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
