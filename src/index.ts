@@ -6,6 +6,7 @@ import { auth } from "./lib/auth";
 import { logger } from "hono/logger";
 import { authMiddleware } from "./lib/middleware";
 import { sendEmail } from "./lib/resend";
+import { rateLimiter } from "hono-rate-limiter";
 
 const app = new Hono();
 
@@ -24,6 +25,15 @@ app.use(
     maxAge: 600,
   })
 );
+
+
+app.use(rateLimiter({
+  windowMs: 15 * 60 * 1000, // 15 minutes,
+  limit: 50, // limit each IP to 50 requests per windowMs
+  standardHeaders: "draft-6",
+  keyGenerator: (c) => c.req.header("X-Forwarded-For") || c.req.header("CF-Connecting-IP") || process.env.RATE_LIMITER_KEY_PREFIX as string, // IP-based key,
+  message: "Hey fella you are doing too much, take a break",
+}))
 
 // //debug 
 // app.get("/api/debug-cookie", (c) => {
