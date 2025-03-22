@@ -60,11 +60,17 @@ if (process.env.RENDER_EXTERNAL_URL) {
 }
 
 app.get("/api/health", (c) => {
+  // Stress it
+  let sum = 0;
+  for (let i = 0; i < 1e7; i++) sum += i; // Heavy CPU
+  const memHog = Array(5e5).fill(Math.random()); // ~5 MB/request
   return c.json({
     message: "OK",
-    lastPing: new Date(lastPingTime).toISOString()
+    lastPing: new Date(lastPingTime).toISOString(),
+    sum,
+    memSize: memHog.length
   }, 200);
-})
+});
 
 
 
