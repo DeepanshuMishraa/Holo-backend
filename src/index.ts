@@ -9,6 +9,7 @@ import { sendEmail } from "./lib/resend";
 import { rateLimiter } from "hono-rate-limiter";
 import { RedisStore } from "@hono-rate-limiter/redis";
 import { Redis } from "@upstash/redis/cloudflare";
+import { turnstileRouter } from "./routes/turnstile";
 
 const app = new Hono();
 const client = new Redis({
@@ -56,6 +57,8 @@ app.use("*", authMiddleware);
 app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 
 app.route("/api/character", characterRouter).route("/api/chat", chatRouter);
+
+app.route("/api", turnstileRouter);
 
 let lastPingTime = Date.now();
 
