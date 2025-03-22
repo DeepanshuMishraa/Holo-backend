@@ -12,12 +12,25 @@ const app = new Hono();
 
 app.use("*", logger())
 
+app.use("*", rateLimiter({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 50, // limit each IP to 50 requests per windowMs
+  standardHeaders: "draft-6",
+  keyGenerator: (c) => {
+    // Get IP from Cloudflare or fallback to other headers
+    const ip = c.req.header("CF-Connecting-IP") ||
+      c.req.header("X-Forwarded-For")?.split(",")[0] ||
+      c.req.header("X-Real-IP") ||
+      "unknown";
+    return `ip-${ip}`;
+  },
+  message: "Too many requests, please try again later",
+}));
+
 app.use(
   "*",
   cors({
-    origin: process.env.NODE_ENV === "production"
-      ? ["https://holo-ai-one.vercel.app", "https://holo.deepanshumishra.me"]
-      : "http://localhost:3001",
+    origin: ["https://holo-ai-one.vercel.app", "https://holo.deepanshumishra.me", "http://localhost:3001"],
     allowMethods: ["POST", "GET", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization", "Cookie"],
     exposeHeaders: ["Set-Cookie", "Content-Length"],
@@ -25,15 +38,6 @@ app.use(
     maxAge: 600,
   })
 );
-
-
-app.use(rateLimiter({
-  windowMs: 15 * 60 * 1000, // 15 minutes,
-  limit: 50, // limit each IP to 50 requests per windowMs
-  standardHeaders: "draft-6",
-  keyGenerator: (c) => c.req.header("X-Forwarded-For") || c.req.header("CF-Connecting-IP") || process.env.RATE_LIMITER_KEY_PREFIX as string, // IP-based key,
-  message: "Hey fella you are doing too much, take a break",
-}))
 
 // //debug 
 // app.get("/api/debug-cookie", (c) => {
