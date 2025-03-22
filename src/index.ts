@@ -7,24 +7,29 @@ import { logger } from "hono/logger";
 import { authMiddleware } from "./lib/middleware";
 import { sendEmail } from "./lib/resend";
 import { rateLimiter } from "hono-rate-limiter";
+import { RedisStore } from "@hono-rate-limiter/redis";
+import { Redis } from "@upstash/redis/cloudflare";
 
 const app = new Hono();
+const client = new Redis({
+  url: process.env.UPSTASH_REDIS_URL as string,
+  token: process.env.UPSTASH_REDIS_TOKEN as string,
+});
 
 app.use("*", logger())
 
 app.use("*", rateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 50, // limit each IP to 50 requests per windowMs
+  limit: 100,
   standardHeaders: "draft-6",
   keyGenerator: (c) => {
-    // Get IP from Cloudflare or fallback to other headers
     const ip = c.req.header("CF-Connecting-IP") ||
       c.req.header("X-Forwarded-For")?.split(",")[0] ||
-      c.req.header("X-Real-IP") ||
       "unknown";
     return `ip-${ip}`;
   },
   message: "Too many requests, please try again later",
+  store: new RedisStore({ client })
 }));
 
 app.use(
