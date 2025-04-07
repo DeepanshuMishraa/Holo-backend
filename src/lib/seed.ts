@@ -247,7 +247,7 @@ export async function seedCharacters(userId: string) {
 }
 
 if (import.meta.main) {
-  const DEFAULT_USER_ID = '';
+  const DEFAULT_USER_ID = 'ccXVUrKbzj3junW32GdLI9Udf6pwXUbq';
 
   console.log('Starting seed process...');
   await seedCharacters(DEFAULT_USER_ID)

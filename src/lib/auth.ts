@@ -30,7 +30,8 @@ export const auth = betterAuth({
     "https://chat-backend-vve1.onrender.com",
     "http://localhost:3001",
     "http://localhost:3000",
-    "https://holo.deepanshumishra.me",
-    "https://api-holo.deepanshumishra.me"
+    "http://localhost:3001",
+    "https://holo.deepanshumishra.xyz",
+    "https://api-holo.deepanshumishra.xyz"
   ]
 });

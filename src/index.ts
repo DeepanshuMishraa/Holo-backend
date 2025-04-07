@@ -12,6 +12,8 @@ import { Redis } from "@upstash/redis/cloudflare";
 import { turnstileRouter } from "./routes/turnstile";
 
 const app = new Hono();
+
+
 const client = new Redis({
   url: process.env.UPSTASH_REDIS_URL as string,
   token: process.env.UPSTASH_REDIS_TOKEN as string,
@@ -36,7 +38,7 @@ app.use("*", rateLimiter({
 app.use(
   "*",
   cors({
-    origin: ["https://holo-ai-one.vercel.app", "https://holo.deepanshumishra.me", "http://localhost:3001"],
+    origin: ["https://holo-ai-one.vercel.app", "https://holo.deepanshumishra.xyz", "http://localhost:3001"],
     allowMethods: ["POST", "GET", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization", "Cookie"],
     exposeHeaders: ["Set-Cookie", "Content-Length"],
