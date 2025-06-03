@@ -38,7 +38,7 @@ app.use("*", rateLimiter({
 app.use(
   "*",
   cors({
-    origin: ["https://holo-ai-one.vercel.app", "https://holo.deepanshumishra.xyz", "http://localhost:3001"],
+    origin: ["https://holo-ai-one.vercel.app", "https://holo.deepanshumishra.xyz", "http://localhost:3001", "https://api-holo.deepanshumishra.xyz"],
     allowMethods: ["POST", "GET", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization", "Cookie"],
     exposeHeaders: ["Set-Cookie", "Content-Length"],
